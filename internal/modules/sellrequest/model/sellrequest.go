@@ -18,6 +18,11 @@ const (
 type PartType string
 
 const (
+	// Equipos completos
+	PartPCDesktop   PartType = "pc_desktop"
+	PartLaptop      PartType = "laptop"
+	PartAllInOne    PartType = "all_in_one"
+	// Componentes
 	PartCPU         PartType = "cpu"
 	PartGPU         PartType = "gpu"
 	PartRAM         PartType = "ram"
@@ -26,14 +31,18 @@ const (
 	PartPSU         PartType = "psu"
 	PartCase        PartType = "case"
 	PartCooler      PartType = "cooler"
+	// Periféricos
 	PartMonitor     PartType = "monitor"
 	PartKeyboard    PartType = "keyboard"
 	PartMouse       PartType = "mouse"
 	PartOther       PartType = "otro"
 )
 
-// Estimados base por tipo de parte (en soles)
+// Estimados base por tipo (en soles)
 var PriceEstimates = map[PartType][2]float64{
+	PartPCDesktop:   {100, 600},
+	PartLaptop:      {80, 500},
+	PartAllInOne:    {80, 450},
 	PartCPU:         {30, 150},
 	PartGPU:         {50, 300},
 	PartRAM:         {15, 60},
