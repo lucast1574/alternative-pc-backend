@@ -17,7 +17,12 @@ func main() {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	_, err := database.Connect(mongoURI)
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "alternative-pc"
+	}
+
+	_, err := database.Connect(mongoURI, dbName)
 	if err != nil {
 		log.Fatalf("Could not connect to database: %v", err)
 	}
@@ -29,6 +34,7 @@ func main() {
 		port = "8080"
 	}
 
+	log.Printf("Server starting on port %s", port)
 	if err := srv.Run(port); err != nil {
 		log.Fatalf("Could not run server: %v", err)
 	}

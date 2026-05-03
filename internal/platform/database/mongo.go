@@ -9,7 +9,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Connect(uri string) (*mongo.Client, error) {
+var (
+	Client *mongo.Client
+	DB     *mongo.Database
+)
+
+func Connect(uri string, dbName string) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -23,6 +28,15 @@ func Connect(uri string) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	log.Println("Connected to MongoDB!")
+	Client = client
+	DB = client.Database(dbName)
+
+	log.Printf("Connected to MongoDB! Database: %s", dbName)
 	return client, nil
+}
+
+func Ping() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return Client.Ping(ctx, nil)
 }
