@@ -20,24 +20,31 @@ func CreateMaintenanceRequest(c *gin.Context) {
 		return
 	}
 
+	// Get user info from auth
+	userID, _ := c.Get("userId")
+	objID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	var userDoc struct {
+		Name  string `bson:"name"`
+		Email string `bson:"email"`
+		Phone string `bson:"phone"`
+	}
+	ctxUser, cancelUser := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelUser()
+	database.DB.Collection("users").FindOne(ctxUser, bson.M{"_id": objID}).Decode(&userDoc)
+
 	req := model.MaintenanceRequest{
 		ServiceType: input.ServiceType,
 		Description: input.Description,
 		DeviceType:  input.DeviceType,
 		DeviceBrand: input.DeviceBrand,
-		ClientName:  input.ClientName,
-		ClientEmail: input.ClientEmail,
-		ClientPhone: input.ClientPhone,
+		ClientName:  userDoc.Name,
+		ClientEmail: userDoc.Email,
+		ClientPhone: userDoc.Phone,
 		Status:      model.MaintPending,
+		UserID:      objID,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-	}
-
-	if userID, exists := c.Get("userId"); exists {
-		objID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err == nil {
-			req.UserID = objID
-		}
 	}
 
 	coll := database.DB.Collection("maintenance_requests")

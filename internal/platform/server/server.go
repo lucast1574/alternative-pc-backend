@@ -68,17 +68,14 @@ func NewServer() *Server {
 	// Auth (public)
 	api.POST("/auth/register", userHandler.Register)
 	api.POST("/auth/login", userHandler.Login)
+	api.POST("/auth/google", userHandler.GoogleAuth)
 
 	// Public listings
 	api.GET("/listings", listingHandler.GetApprovedListings)
 	api.GET("/listings/:id", listingHandler.GetListing)
 
-	// Public sell request (no auth needed to submit)
-	api.POST("/sell-requests", sellHandler.CreateSellRequest)
+	// Public price estimates
 	api.GET("/sell-requests/estimates", sellHandler.GetPriceEstimates)
-
-	// Public maintenance request
-	api.POST("/maintenance-requests", maintenanceHandler.CreateMaintenanceRequest)
 
 	// Protected routes
 	protected := api.Group("")
@@ -86,6 +83,11 @@ func NewServer() *Server {
 	{
 		// User
 		protected.GET("/me", userHandler.GetMe)
+		protected.PATCH("/me", userHandler.UpdateProfile)
+
+		// Sell & maintenance requests (require auth)
+		protected.POST("/sell-requests", sellHandler.CreateSellRequest)
+		protected.POST("/maintenance-requests", maintenanceHandler.CreateMaintenanceRequest)
 
 		// Listings (seller/admin)
 		sellerRoutes := protected.Group("/listings")

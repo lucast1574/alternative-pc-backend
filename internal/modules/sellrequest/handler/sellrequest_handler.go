@@ -26,28 +26,35 @@ func CreateSellRequest(c *gin.Context) {
 		estimates = model.PriceEstimates[model.PartOther]
 	}
 
+	// Get user info from auth context
+	userID, _ := c.Get("userId")
+	objID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	// Get user details from DB
+	var userDoc struct {
+		Name  string `bson:"name"`
+		Email string `bson:"email"`
+		Phone string `bson:"phone"`
+	}
+	ctxUser, cancelUser := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelUser()
+	database.DB.Collection("users").FindOne(ctxUser, bson.M{"_id": objID}).Decode(&userDoc)
+
 	req := model.SellRequest{
 		PartType:    input.PartType,
 		Brand:       input.Brand,
 		Model:       input.Model,
 		Condition:   input.Condition,
 		Description: input.Description,
-		SellerName:  input.SellerName,
-		SellerEmail: input.SellerEmail,
-		SellerPhone: input.SellerPhone,
+		SellerName:  userDoc.Name,
+		SellerEmail: userDoc.Email,
+		SellerPhone: userDoc.Phone,
 		EstimateMin: estimates[0],
 		EstimateMax: estimates[1],
 		Status:      model.SellPending,
+		UserID:      objID,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-	}
-
-	// If user is authenticated, link it
-	if userID, exists := c.Get("userId"); exists {
-		objID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err == nil {
-			req.UserID = objID
-		}
 	}
 
 	coll := database.DB.Collection("sell_requests")

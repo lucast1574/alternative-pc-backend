@@ -83,7 +83,4 @@ type CreateSellRequestInput struct {
 	Model       string   `json:"model" binding:"required"`
 	Condition   string   `json:"condition" binding:"required"`
 	Description string   `json:"description"`
-	SellerName  string   `json:"sellerName" binding:"required"`
-	SellerEmail string   `json:"sellerEmail" binding:"required,email"`
-	SellerPhone string   `json:"sellerPhone" binding:"required"`
 }

@@ -48,7 +48,4 @@ type CreateMaintenanceInput struct {
 	Description string      `json:"description" binding:"required"`
 	DeviceType  string      `json:"deviceType" binding:"required"`
 	DeviceBrand string      `json:"deviceBrand"`
-	ClientName  string      `json:"clientName" binding:"required"`
-	ClientEmail string      `json:"clientEmail" binding:"required,email"`
-	ClientPhone string      `json:"clientPhone" binding:"required"`
 }

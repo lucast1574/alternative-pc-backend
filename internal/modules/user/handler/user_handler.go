@@ -46,6 +46,10 @@ func Register(c *gin.Context) {
 		Password:  string(hashedPassword),
 		Role:      model.RoleUser,
 		Phone:     input.Phone,
+		DNI:       input.DNI,
+		Address:   input.Address,
+		City:      input.City,
+		District:  input.District,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

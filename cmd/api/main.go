@@ -8,6 +8,7 @@ import (
 
 	"github.com/alternative/backend/internal/platform/auth"
 	"github.com/alternative/backend/internal/platform/database"
+	"github.com/alternative/backend/internal/platform/seed"
 	"github.com/alternative/backend/internal/platform/server"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,8 +35,9 @@ func main() {
 		log.Fatalf("Could not connect to database: %v", err)
 	}
 
-	// Auto-seed: make admin@alternative.lat an admin if exists
+	// Auto-seed
 	seedAdmin()
+	seed.SeedMockListings()
 
 	srv := server.NewServer()
 
