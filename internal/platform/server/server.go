@@ -4,7 +4,12 @@ import (
 	"net/http"
 	"time"
 
+	listingHandler "github.com/alternative/backend/internal/modules/listing/handler"
+	maintenanceHandler "github.com/alternative/backend/internal/modules/maintenance/handler"
+	sellHandler "github.com/alternative/backend/internal/modules/sellrequest/handler"
+	userHandler "github.com/alternative/backend/internal/modules/user/handler"
 	"github.com/alternative/backend/internal/platform/database"
+	"github.com/alternative/backend/internal/platform/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +23,7 @@ func NewServer() *Server {
 	// CORS middleware
 	engine.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -27,14 +32,15 @@ func NewServer() *Server {
 		c.Next()
 	})
 
-	// Health check - pings MongoDB
-	engine.GET("/api/health", func(c *gin.Context) {
+	api := engine.Group("/api")
+
+	// Health & Status
+	api.GET("/health", func(c *gin.Context) {
 		err := database.Ping()
 		if err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":  "error",
 				"message": "database unreachable",
-				"error":   err.Error(),
 			})
 			return
 		}
@@ -45,14 +51,11 @@ func NewServer() *Server {
 		})
 	})
 
-	// Status endpoint
-	engine.GET("/api/status", func(c *gin.Context) {
+	api.GET("/status", func(c *gin.Context) {
 		dbStatus := "connected"
-		err := database.Ping()
-		if err != nil {
-			dbStatus = "disconnected: " + err.Error()
+		if err := database.Ping(); err != nil {
+			dbStatus = "disconnected"
 		}
-
 		c.JSON(http.StatusOK, gin.H{
 			"service":  "alternative-pc-backend",
 			"version":  "1.0.0",
@@ -62,9 +65,58 @@ func NewServer() *Server {
 		})
 	})
 
-	return &Server{
-		Engine: engine,
+	// Auth (public)
+	api.POST("/auth/register", userHandler.Register)
+	api.POST("/auth/login", userHandler.Login)
+
+	// Public listings
+	api.GET("/listings", listingHandler.GetApprovedListings)
+	api.GET("/listings/:id", listingHandler.GetListing)
+
+	// Public sell request (no auth needed to submit)
+	api.POST("/sell-requests", sellHandler.CreateSellRequest)
+	api.GET("/sell-requests/estimates", sellHandler.GetPriceEstimates)
+
+	// Public maintenance request
+	api.POST("/maintenance-requests", maintenanceHandler.CreateMaintenanceRequest)
+
+	// Protected routes
+	protected := api.Group("")
+	protected.Use(middleware.AuthRequired())
+	{
+		// User
+		protected.GET("/me", userHandler.GetMe)
+
+		// Listings (seller/admin)
+		sellerRoutes := protected.Group("/listings")
+		sellerRoutes.Use(middleware.SellerOrAdmin())
+		{
+			sellerRoutes.POST("", listingHandler.CreateListing)
+		}
+
+		// My listings
+		protected.GET("/my-listings", listingHandler.GetMyListings)
+
+		// Admin routes
+		admin := protected.Group("/admin")
+		admin.Use(middleware.AdminRequired())
+		{
+			admin.GET("/users", userHandler.ListUsers)
+			admin.PATCH("/users/:id/role", userHandler.UpdateRole)
+
+			admin.GET("/listings/pending", listingHandler.GetPendingListings)
+			admin.PATCH("/listings/:id/approve", listingHandler.ApproveListing)
+			admin.PATCH("/listings/:id/reject", listingHandler.RejectListing)
+
+			admin.GET("/sell-requests", sellHandler.GetSellRequests)
+			admin.PATCH("/sell-requests/:id", sellHandler.UpdateSellRequest)
+
+			admin.GET("/maintenance-requests", maintenanceHandler.GetMaintenanceRequests)
+			admin.PATCH("/maintenance-requests/:id", maintenanceHandler.UpdateMaintenanceRequest)
+		}
 	}
+
+	return &Server{Engine: engine}
 }
 
 func (s *Server) Run(port string) error {

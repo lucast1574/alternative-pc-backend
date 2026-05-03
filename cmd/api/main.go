@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/alternative/backend/internal/platform/auth"
 	"github.com/alternative/backend/internal/platform/database"
 	"github.com/alternative/backend/internal/platform/server"
 	"github.com/joho/godotenv"
@@ -11,6 +12,9 @@ import (
 
 func main() {
 	_ = godotenv.Load()
+
+	// Init JWT
+	auth.Init()
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
