@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/alternative/backend/internal/platform/auth"
 	"github.com/alternative/backend/internal/platform/database"
 	"github.com/alternative/backend/internal/platform/server"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func main() {
@@ -31,6 +34,9 @@ func main() {
 		log.Fatalf("Could not connect to database: %v", err)
 	}
 
+	// Auto-seed: make admin@alternative.lat an admin if exists
+	seedAdmin()
+
 	srv := server.NewServer()
 
 	port := os.Getenv("PORT")
@@ -41,5 +47,28 @@ func main() {
 	log.Printf("Server starting on port %s", port)
 	if err := srv.Run(port); err != nil {
 		log.Fatalf("Could not run server: %v", err)
+	}
+}
+
+func seedAdmin() {
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	if adminEmail == "" {
+		adminEmail = "admin@alternative.lat"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	coll := database.DB.Collection("users")
+	result, err := coll.UpdateOne(ctx,
+		bson.M{"email": adminEmail, "role": bson.M{"$ne": "admin"}},
+		bson.M{"$set": bson.M{"role": "admin"}},
+	)
+	if err != nil {
+		log.Printf("Admin seed check failed: %v", err)
+		return
+	}
+	if result.ModifiedCount > 0 {
+		log.Printf("Seeded admin role for %s", adminEmail)
 	}
 }
