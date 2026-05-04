@@ -85,7 +85,7 @@ func NewServer() *Server {
 		protected.GET("/me", userHandler.GetMe)
 		protected.PATCH("/me", userHandler.UpdateProfile)
 
-		// Sell & maintenance requests (require auth)
+		// Sell & maintenance (auth required to submit)
 		protected.POST("/sell-requests", sellHandler.CreateSellRequest)
 		protected.POST("/maintenance-requests", maintenanceHandler.CreateMaintenanceRequest)
 
